@@ -4,10 +4,12 @@ from pytz import timezone
 '''this function should be run in the morning of each game day
 example url to create :  https://statsapi.web.nhl.com/api/v1/schedule?date=2021-11-24
 '''
-
-def api_url_maker():
+'''
+takes a string type as date
+'''
+def api_url_maker(date):
     front = "https://statsapi.web.nhl.com/api/v1/schedule?date="
-    today = todays_date()
+    today = date
     complete_url = front+today
     return complete_url
 
