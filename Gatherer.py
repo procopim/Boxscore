@@ -1,4 +1,7 @@
 '''
+Gatherer class gathers all the json payload for a given gamePK, each payload is timestamped.
+This is because Gatherer should end a game with a timestamped payload every 30 seconds due to 
+changing game conditions as game persists to regulation final. 
 to be used by a controller that calls Gatherer's set_payload_entry function, until gamestate = Final
 
 @brief Gatherer: Abstract Data Type - contains gamePk payloads
@@ -8,6 +11,14 @@ to be used by a controller that calls Gatherer's set_payload_entry function, unt
 
 class Gatherer:
     import time       
+
+    def __init__(self, gamePk, gamePk_url, schedule_url):
+        self.gamePk = gamePk
+        self.gamePk_url = gamePk_url
+        self.schedule_url = schedule_url
+        self.gamestate = self.get_gamestate() #may need to set as unknown on init - tbd
+        self.payloads = {}
+        self.is_active = False
         
     def get_gamestate(self):
         self.gamestate = GameScheduler.get_gamestate(self.gamePk, self.schedule_url)
@@ -25,10 +36,3 @@ class Gatherer:
 
     def get_payload(self):
         return GameScheduler.get_json(self.gamePk_url)
-        
-    def __init__(self, gamePk, gamePk_url, schedule_url):
-        self.gamePk = gamePk
-        self.gamePk_url = gamePk_url
-        self.schedule_url = schedule_url
-        self.gamestate = self.get_gamestate()
-        self.payloads = {}   
