@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import GameScheduler, Gatherer, nhlURLmaker
+import traceback
+import GameScheduler, Gatherer, nhlURLmaker, time
 
 def main():
     print "Begin NHL Game payload collection service..."
@@ -14,7 +15,7 @@ def main():
     Games = Schedule.gamePks #a list 
 
     #globals; keep in mind you have global vars for every gamePk
-    end_of_night_flag = False
+    end_of_night_flag = None
     global_game_cnt = len(Games)
 
     
@@ -27,28 +28,32 @@ def main():
         #exec func executes the string, which is formatted using str.format method
         game_dict[gameID] = Gatherer.Gatherer(gameID,gameURL,todays_url)
         check = lambda v: v if game_dict.__contains__(v) else "Error"
-        print "object created with game ID: {0}, and game URL: {1}".format(check(gameID),game_dict[gameID].gamePk_url)
-    
-    #capture game payload every 30 secs until game is Final
-        
+        print "object created with game ID: {0}, and game URL: {1}".format(check(gameID),game_dict[gameID].gamePk_url)      
 
-    while not end_of_night_flag == False:
+    while not end_of_night_flag == True:
+        #time.sleep(25) #capture game payload every 30 secs until game is Final
         try:
             #each gameID is a variable in memory with its GATHERER obj as value; so loop through them and check gamestate
+            print "active games remaining: {}".format(global_game_cnt)
             for game in Games:
-                if not game.gamestate == "Final":    
-                    game.is_active == True
-                    game.set_payload_entry()
+                time.sleep(1)
+                if not game_dict[game].gamestate == "Final":    
+                    game_dict[game].is_active == True
+                    game_dict[game].set_payload_entry()
+                    print "gameID: {} is still ongoing".format(game)
                 
                 #game is Final
-                game.is_active = False
+                game_dict[game].is_active = False
                 Games.pop()
-                global_game_cnt+=1
+                global_game_cnt-=1
+                print "gameID: {} has ended".format(game)
             
             if global_game_cnt == 0:
-                end_of_night_flag == False
-        except:
-            print "something went wrong"  
+                end_of_night_flag = True
+            #print "active games remaining: {}".format(global_game_cnt)
+        except Exception:
+            traceback.print_exc()
+            #print "something went wrong"  
 
 if __name__ == "__main__":
     main()
