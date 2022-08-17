@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import traceback
 import GameScheduler, Gatherer, nhlURLmaker, time
+import db_handler as db
 
 def main():
     print "Begin NHL Game payload collection service..."
@@ -18,6 +19,11 @@ def main():
     end_of_night_flag = None
     global_game_cnt = len(Games)
 
+    #database initialization
+    db_cnx = db.connect()
+    db_cur = db.open_cursor(db_cnx)
+    db.use(db_cnx, db_cur)
+    db.create_tables()
     
     #create Gatherer objects for each game in the schedule
     game_dict = {}
