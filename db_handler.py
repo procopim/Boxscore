@@ -4,7 +4,7 @@ import mysql.connector
 from mysql.connector import errorcode
 
 '''
-This module creates a mysql db instance - we set it to localhost for time being. 
+This module creates a mysql db instance
 ASSUMES INSTALLATION OF MYSQL SERVER
 To be configured when deployed on AWS
 '''
@@ -20,31 +20,33 @@ TABLES['GAMERECORD'] = (
     ")"
     )
 
+#todo
+'''create external config file with mysql creds'''
+
 '''
 @brief db_connect method
 @detail establishes connection with database and returns the connection object
 @detail for time being, this will not take any credentials. we will create on localhost only
 @return mysql.connector.connection_cext.CMySQLConnection object
 '''
-def DB_connect():
+def connect():
     cnx = mysql.connector.connect(
-        host = "localhost",
-        database = "mysql",
-        user = "user",
-        pw = "pw",
+        database = DB_NAME,
+        user = "mark",
+        password = "mark123!",
         use_pure=True
     )
     return cnx
 
-def DB_close(cnx):
+def close_connection(cnx):
     cnx.close()
     print "db conection closed"
 
-def open_DB_cursor(cnx):
+def open_cursor(cnx):
     cursorObj = cnx.cursor()
     return cursorObj
 
-def close_DB_cursor(cursor):
+def close_cursor(cursor):
     cursor.close()
     print "db cursor closed"
 
@@ -53,16 +55,18 @@ def close_DB_cursor(cursor):
 @detail tries to use DB_NAME as db. Exception provokes creation of db
 @return None
 '''
-def use_DB(cnx, cursor):
+def use(cnx, cursor):
     try:
         cursor.execute("USE {}".format(DB_NAME))
+        print "mysql> USE {}".format(DB_NAME)
+        print "is correct db? : {}".format(is_correct_db(cnx))
     except mysql.connector.Error as err:
         print("Database {} does not exists.".format(DB_NAME))
         if err.errno == errorcode.ER_BAD_DB_ERROR:
             create_DB(cnx, cursor)
-    else:
-        print(err)
-        exit(1)
+        else:
+            print(err)
+            exit(1)
 
 '''
 @brief create_DB method
@@ -98,9 +102,6 @@ def create_tables(cnx, cursor):
                 print(err.msg)
         else:
             print("OK")
-
-    close_DB_cursor(cursor)
-    DB_close(cnx)
 
 def is_correct_db(cnx):
     if cnx.database == DB_NAME:
