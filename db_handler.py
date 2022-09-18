@@ -12,13 +12,14 @@ To be configured when deployed on AWS
 DB_NAME = "game_payload"
 
 TABLES = {}
-TABLES['GAMERECORD'] = (
-    "CREATE TABLE `GAMERECORD` ("
-    "DATE date NOT NULL,"
-    "gamePK INT NOT NULL,"
-    "record JSON"
-    ")"
-    )
+TABLES['GAMERECORD'] = """
+    CREATE TABLE GAMERECORD (
+    DATE DATETIME NOT NULL,
+    GAMEPK INT NOT NULL,
+    HOMETEAM VARCHAR(75) NOT NULL,
+    AWAYTEAM VARCHAR(75) NOT NULL,
+    RECORD TEXT
+    )"""
 
 #todo
 '''create external config file with mysql creds'''
@@ -31,9 +32,9 @@ TABLES['GAMERECORD'] = (
 '''
 def connect():
     cnx = mysql.connector.connect(
-        database = DB_NAME,
-        user = "mark",
-        password = "mark123!",
+        host = "localhost",
+        user = "root",
+        password = "mark",
         use_pure=True
     )
     return cnx
@@ -61,7 +62,8 @@ def use(cnx, cursor):
         print "mysql> USE {}".format(DB_NAME)
         print "is correct db? : {}".format(is_correct_db(cnx))
     except mysql.connector.Error as err:
-        print("Database {} does not exists.".format(DB_NAME))
+        print("error: {}").format(err)
+        #print("Database {} does not exists.".format(DB_NAME))
         if err.errno == errorcode.ER_BAD_DB_ERROR:
             create_DB(cnx, cursor)
         else:
@@ -79,6 +81,7 @@ def create_DB(cnx,cursor):
         #create db
         cursor.execute("CREATE DATABASE {} DEFAULT CHARACTER SET 'utf8'".format(DB_NAME))
         print "mysql cmd: CREATE DATABASE {}".format(DB_NAME)
+        cursor.use(DB_NAME)
         print "is successful? : {}".format(is_correct_db(cnx))
         #cnx.database = DB_NAME --- do we need to set this before running is_correct_db() ? 
         print "creating tables..."
@@ -110,3 +113,27 @@ def is_correct_db(cnx):
         return False
 
 #create function that writes gamePK, home and away team to a table. so you can index teams by gamePK
+def write(cnx,cursor,data):
+    sql = """
+    INSERT INTO GAMERECORD (DATE,GAMEPK,HOMETEAM,AWAYTEAM,RECORD)
+    VALUES (%s,%s,%s,%s,%s)
+    """
+    row = {
+        'DATE':data[0],
+        'GAMEPK':data[1],
+        'HOMETEAM':data[2],
+        'AWAYTEAM':data[3],
+        'RECORD':data[4]
+    }
+    cursor.execute(sql,data)
+    cnx.commit()
+
+'''TABLES['GAMERECORD'] = (
+    "CREATE TABLE `GAMERECORD` ("
+    "DATE date NOT NULL,"
+    "GAMEPK INT NOT NULL,"
+    "HOMETEAM VARCHAR(50)",
+    "AWAYTEAM VARCHAR(50)",
+    "RECORD JSON"
+    ")"
+    )'''

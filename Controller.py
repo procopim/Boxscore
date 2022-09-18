@@ -23,14 +23,14 @@ def main():
     db_cnx = db.connect()
     db_cur = db.open_cursor(db_cnx)
     db.use(db_cnx, db_cur)
-    db.create_tables()
+    db.create_tables(cnx,cur)
     
     #create Gatherer objects for each game in the schedule
     game_dict = {}
     print "creating gatherer objects for all games... "
     for gameID in Games:
         game_dict[gameID] = None 
-    for gameID, gameURL in zip(Games,Game_urls_to_hit):
+    for gameID, gameURL in zip(Games, Game_urls_to_hit):
         #exec func executes the string, which is formatted using str.format method
         game_dict[gameID] = Gatherer.Gatherer(gameID,gameURL,todays_url)
         check = lambda v: v if game_dict.__contains__(v) else "Error"
@@ -60,6 +60,9 @@ def main():
         except Exception:
             traceback.print_exc()
             #print "something went wrong"  
+
+    #iterate over the Gatherer's payloads and write to DB
+    #need to close cursor and cnx
 
 if __name__ == "__main__":
     main()
