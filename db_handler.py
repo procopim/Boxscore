@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from fileinput import close
 from msilib.schema import tables
 import mysql.connector
 from mysql.connector import errorcode
@@ -14,7 +15,7 @@ DB_NAME = "game_payload"
 TABLES = {}
 TABLES['GAMERECORD'] = """
     CREATE TABLE GAMERECORD (
-    DATE DATETIME NOT NULL,
+    DATE TIMESTAMP NOT NULL,
     GAMEPK INT NOT NULL,
     HOMETEAM VARCHAR(75) NOT NULL,
     AWAYTEAM VARCHAR(75) NOT NULL,
@@ -33,6 +34,7 @@ TABLES['GAMERECORD'] = """
 def connect():
     cnx = mysql.connector.connect(
         host = "localhost",
+        database = DB_NAME,
         user = "root",
         password = "mark",
         use_pure=True
@@ -56,11 +58,14 @@ def close_cursor(cursor):
 @detail tries to use DB_NAME as db. Exception provokes creation of db
 @return None
 '''
-def use(cnx, cursor):
+def use(DB_NAME):
+    cnx = connect()
+    cur = open_cursor(cnx)
     try:
-        cursor.execute("USE {}".format(DB_NAME))
+        cur.execute("USE {}".format(DB_NAME))
         print "mysql> USE {}".format(DB_NAME)
         print "is correct db? : {}".format(is_correct_db(cnx))
+        create_tables(cur)
     except mysql.connector.Error as err:
         print("error: {}").format(err)
         #print("Database {} does not exists.".format(DB_NAME))
@@ -69,6 +74,9 @@ def use(cnx, cursor):
         else:
             print(err)
             exit(1)
+
+    close_cursor(cur)
+    close_connection(cnx)
 
 '''
 @brief create_DB method
@@ -86,13 +94,13 @@ def create_DB(cnx,cursor):
         #cnx.database = DB_NAME --- do we need to set this before running is_correct_db() ? 
         print "creating tables..."
 
-        create_tables(cnx, cursor)
+        create_tables(cursor)
 
     except mysql.connector.Error as err:
         print "Failed to create database: {}".format(err)
         exit(1)
 
-def create_tables(cnx, cursor):
+def create_tables(cursor):
     for table_name in TABLES:
         table_description = TABLES[table_name]
         try:
@@ -113,27 +121,22 @@ def is_correct_db(cnx):
         return False
 
 #create function that writes gamePK, home and away team to a table. so you can index teams by gamePK
-def write(cnx,cursor,data):
+def write(data):
+    cnx = connect()
+    cur = open_cursor(cnx)
+    
     sql = """
     INSERT INTO GAMERECORD (DATE,GAMEPK,HOMETEAM,AWAYTEAM,RECORD)
-    VALUES (%s,%s,%s,%s,%s)
+    VALUES (%(DATE)s,%(GAMEPK)s,%(HOMETEAM)s,%(AWAYTEAM)s,%(RECORD)s)
     """
     row = {
         'DATE':data[0],
         'GAMEPK':data[1],
-        'HOMETEAM':data[2],
-        'AWAYTEAM':data[3],
-        'RECORD':data[4]
+        'HOMETEAM':str(data[2]),
+        'AWAYTEAM':str(data[3]),
+        'RECORD':str(data[4])
     }
-    cursor.execute(sql,data)
+    cur.execute(sql,row)
     cnx.commit()
-
-'''TABLES['GAMERECORD'] = (
-    "CREATE TABLE `GAMERECORD` ("
-    "DATE date NOT NULL,"
-    "GAMEPK INT NOT NULL,"
-    "HOMETEAM VARCHAR(50)",
-    "AWAYTEAM VARCHAR(50)",
-    "RECORD JSON"
-    ")"
-    )'''
+    close_cursor(cur)
+    close_connection(cnx)

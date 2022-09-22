@@ -4,7 +4,7 @@ import GameScheduler, Gatherer, nhlURLmaker, time
 import db_handler as db
 
 def main():
-    print "Begin NHL Game payload collection service..."
+    print "\n Begin NHL Game payload collection service... "
     #todays_date = nhlURLmaker.todays_date() #commented out for testing purposes:
     todays_date = "2022-03-24"
     print "today's date: {}".format(todays_date)
@@ -20,10 +20,8 @@ def main():
     global_game_cnt = len(Games)
 
     #database initialization
-    db_cnx = db.connect()
-    db_cur = db.open_cursor(db_cnx)
-    db.use(db_cnx, db_cur)
-    db.create_tables(cnx,cur)
+    DB_NAME = "game_payload"
+    db.use(DB_NAME)
     
     #create Gatherer objects for each game in the schedule
     game_dict = {}
@@ -50,19 +48,17 @@ def main():
                 
                 #game is Final
                 game_dict[game].is_active = False
-                Games.pop()
+                Games.remove(game)
                 global_game_cnt-=1
                 print "gameID: {} has ended".format(game)
             
             if global_game_cnt == 0:
                 end_of_night_flag = True
-            #print "active games remaining: {}".format(global_game_cnt)
-        except Exception:
-            traceback.print_exc()
+            
+        except Exception as e:
+            print "error: {}".format(e)
+            #traceback.print_exc()
             #print "something went wrong"  
-
-    #iterate over the Gatherer's payloads and write to DB
-    #need to close cursor and cnx
 
 if __name__ == "__main__":
     main()

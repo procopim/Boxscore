@@ -1,4 +1,9 @@
-import GameScheduler, time, requests
+import db_handler as db
+import time
+import requests
+import datetime
+
+
 '''
 Gatherer class gathers all the json payload for a given gamePK, each payload is timestamped.
 This is because Gatherer should end a game with a timestamped payload every 30 seconds due to 
@@ -12,18 +17,40 @@ to be used by a controller that calls Gatherer's set_payload_entry function, unt
 
 class Gatherer:
 
-    def set_payload_entry(self):
+    '''
+    @brief static method that takes as argument an NHL API return url containing json
+    @detail arg ex:  "https://statsapi.web.nhl.com/api/v1/game/2021020292/boxscore"
+    @detail staticmethod allows access outside of class instance
+    '''
+    @staticmethod
+    def get_json(NHL_url):
+        #'response' type: request.modles.Reponse
+        response = requests.get(NHL_url)
+        #type(data) == dict
+        data = response.json()
+        return data
 
+    def set_payload_entry(self):
+        print "setting payload"
         timestamp = time.time()
         # convert to datetime
-        date_time = datetime.fromtimestamp(timestamp)
+        #date_time = datetime.fromtimestamp(timestamp)
         # convert timestamp to string in HH:MM:SS
-        str_time = date_time.strftime("%H:%M:%S")
+        #str_time = date_time.strftime("%H:%M:%S")
 
-        self.payloads.setdefault(str_time, self.get_payload())
+        utc = datetime.datetime.utcnow()
 
+        #self.payloads.setdefault(str_time, self.get_payload())
+        data = []
+        data.append(utc)
+        data.append(self.gamePk)
+        data.append(self.hometeam)
+        data.append(self.awayteam)
+        data.append(self.get_payload())
+        db.write(data)
+    
     def get_payload(self):
-        return GameScheduler.get_json(self.gamePk_url)
+        return Gatherer.get_json(self.gamePk_url)
 
     '''
     @brief gamestate_check returns the state of a given gamePk
@@ -36,6 +63,7 @@ class Gatherer:
                 return data["dates"][0]["games"][i]["status"]["abstractGameState"]
             else:
                 continue
+
     '''
     @brief static method that takes as argument an NHL API return url containing json
     @detail arg ex:  "https://statsapi.web.nhl.com/api/v1/game/2021020292/boxscore"
@@ -57,3 +85,5 @@ class Gatherer:
         self.gamestate = Gatherer.get_gamestate(self.gamePk, self.schedule_url) #may need to set as unknown on init - tbd
         self.payloads = {}
         self.is_active = False
+        self.hometeam = Gatherer.get_json(gamePk_url)["teams"]["home"]["team"]["name"]
+        self.awayteam = Gatherer.get_json(gamePk_url)["teams"]["away"]["team"]["name"]
